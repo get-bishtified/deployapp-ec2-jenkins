@@ -106,23 +106,25 @@ Idempotent deployments
 
 🛠️ Prerequisites
 
-- Jenkins (running on Linux agents or an EC2 node that supports `sh` steps)
-- Docker (for local image builds if used on the agent)
-- Terraform (or use a Terraform container/agent)
-- AWS CLI (optional, for local testing)
+Jenkins (running on EC2)
 
-Jenkins credentials required for this repo:
-- **SSH key** credential id: `ec2-ssh-key` — private key used by the pipeline to SSH into the target EC2 instance
+Docker
 
-Option A — IAM instance role (recommended):
-- Attach an IAM Role to the Jenkins server with the required Terraform permissions (ECR, ECS, IAM, CloudWatch, VPC etc.). When using an instance profile, Terraform on the Jenkins agent will pick up credentials automatically and **no `aws-credentials` binding is required**.
+Terraform
 
-Option B — Static AWS credentials (optional):
-- If you cannot use an instance role, you can add an AWS access key/secret Jenkins credential with id `aws-credentials` and update the pipeline to use that binding (not required for instance-role setups).
+AWS CLI
 
-Note: The pipeline's EC2-based deployment stage clones the repo and builds/runs the Docker image on the target host via SSH (requires `ec2-user` to have `sudo` for Docker or to be in the `docker` group).
+IAM Role attached to Jenkins EC2 with:
 
-**Local testing:** To build images locally, ensure your Docker daemon is running (e.g., Docker Desktop on Windows). Alternatively run the build on a Linux Jenkins agent or use a Terraform/CI container that includes the required tools.
+ECR
+
+ECS
+
+IAM
+
+CloudWatch
+
+VPC permissions
 
 🚀 When to Use This Approach
 Requirement	Solution
