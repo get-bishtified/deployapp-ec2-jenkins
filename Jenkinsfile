@@ -53,7 +53,7 @@ pipeline {
       }
     }
 
-    stage('Deploy to EC2 (Docker runs ONLY on EC2)') {
+    stage('Deploy to EC2 (Docker on EC2 only)') {
       steps {
         sshagent(credentials: ['ec2-ssh-key']) {
           script {
@@ -68,8 +68,14 @@ pipeline {
 
                 echo "Connected to target EC2"
 
-                # Use absolute path to avoid PATH issues
-                /usr/bin/docker --version
+                DOCKER_BIN=\$(command -v docker)
+                if [ -z "\$DOCKER_BIN" ]; then
+                  echo "ERROR: Docker not found on target EC2"
+                  exit 1
+                fi
+
+                echo "Docker found at: \$DOCKER_BIN"
+                \$DOCKER_BIN --version
 
                 APP_DIR=/home/ec2-user/demo-app
 
@@ -79,9 +85,9 @@ pipeline {
 
                 cd \$APP_DIR/app
 
-                /usr/bin/docker build -t python-jenkins-app .
-                /usr/bin/docker rm -f python-app || true
-                /usr/bin/docker run -d -p 5000:5000 --name python-app python-jenkins-app
+                \$DOCKER_BIN build -t python-jenkins-app .
+                \$DOCKER_BIN rm -f python-app || true
+                \$DOCKER_BIN run -d -p 5000:5000 --name python-app python-jenkins-app
 
                 echo "Application deployed successfully on EC2"
               EOF
