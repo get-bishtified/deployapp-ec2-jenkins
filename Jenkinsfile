@@ -68,8 +68,8 @@ pipeline {
 
                 echo "Connected to target EC2"
 
-                # Docker check on EC2 (NOT Jenkins)
-                docker --version
+                # Use absolute path to avoid PATH issues
+                /usr/bin/docker --version
 
                 APP_DIR=/home/ec2-user/demo-app
 
@@ -79,9 +79,9 @@ pipeline {
 
                 cd \$APP_DIR/app
 
-                docker build -t python-jenkins-app .
-                docker rm -f python-app || true
-                docker run -d -p 5000:5000 --name python-app python-jenkins-app
+                /usr/bin/docker build -t python-jenkins-app .
+                /usr/bin/docker rm -f python-app || true
+                /usr/bin/docker run -d -p 5000:5000 --name python-app python-jenkins-app
 
                 echo "Application deployed successfully on EC2"
               EOF
