@@ -4,7 +4,7 @@ pipeline {
   parameters {
     booleanParam(
       name: 'TAINT_RESOURCE',
-      defaultValue: false,
+      defaultValue: true,
       description: 'Taint EC2 resource before terraform apply'
     )
     string(
@@ -63,19 +63,12 @@ pipeline {
             ).trim()
 
             sh """
-ssh -o StrictHostKeyChecking=no ec2-user@${ip} <<EOF
+ssh -o StrictHostKeyChecking=no ec2-user@${ip} "bash -l" <<EOF
 set -e
 
 echo "Connected to target EC2"
-
-DOCKER_BIN=\$(command -v docker)
-if [ -z "\$DOCKER_BIN" ]; then
-  echo "ERROR: Docker not found on target EC2"
-  exit 1
-fi
-
-echo "Docker found at: \$DOCKER_BIN"
-\$DOCKER_BIN --version
+which docker
+docker --version
 
 APP_DIR=/home/ec2-user/demo-app
 
@@ -85,9 +78,9 @@ fi
 
 cd \$APP_DIR/app
 
-\$DOCKER_BIN build -t python-jenkins-app .
-\$DOCKER_BIN rm -f python-app || true
-\$DOCKER_BIN run -d -p 5000:5000 --name python-app python-jenkins-app
+docker build -t python-jenkins-app .
+docker rm -f python-app || true
+docker run -d -p 5000:5000 --name python-app python-jenkins-app
 
 echo "Application deployed successfully on EC2"
 EOF
@@ -95,15 +88,6 @@ EOF
           }
         }
       }
-    }
-  }
-
-  post {
-    success {
-      echo 'Deployment completed successfully'
-    }
-    failure {
-      echo 'Deployment failed'
     }
   }
 }
