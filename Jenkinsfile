@@ -4,8 +4,8 @@ pipeline {
   parameters {
     booleanParam(
       name: 'TAINT_RESOURCE',
-      defaultValue: true,
-      description: 'Taint EC2 resource before terraform apply'
+      defaultValue: false,
+      description: 'Taint EC2 resource before terraform apply (default: false)'
     )
     string(
       name: 'TAINT_TARGET',
@@ -26,10 +26,30 @@ pipeline {
       }
     }
 
+    stage('Verify Environment') {
+      steps {
+        sh '''
+          echo "Checking required tools on agent..."
+          terraform --version || echo "terraform not found; ensure the agent has terraform or use a terraform docker image as agent"
+          ssh -V || true
+          docker --version || echo "docker not found on agent (not required for remote EC2 deploy)"
+        '''
+      }
+    }
+
     stage('Terraform Init') {
       steps {
         dir(TF_DIR) {
-          sh 'terraform init'
+          sh '''
+            if command -v aws >/dev/null 2>&1; then
+              echo "AWS CLI found, caller identity:"
+              aws sts get-caller-identity || true
+            else
+              echo "AWS CLI not installed; assuming Jenkins instance profile / role is used by Terraform"
+            fi
+
+            terraform init
+          '''
         }
       }
     }
@@ -40,7 +60,16 @@ pipeline {
       }
       steps {
         dir(TF_DIR) {
-          sh "terraform taint ${params.TAINT_TARGET}"
+          sh '''
+            if command -v aws >/dev/null 2>&1; then
+              echo "Running with Jenkins instance role (caller identity):"
+              aws sts get-caller-identity || true
+            else
+              echo "AWS CLI not installed; proceeding and assuming instance role is available to Terraform"
+            fi
+
+            terraform taint ${params.TAINT_TARGET}
+          '''
         }
       }
     }
@@ -48,7 +77,16 @@ pipeline {
     stage('Terraform Apply') {
       steps {
         dir(TF_DIR) {
-          sh 'terraform apply -auto-approve'
+          sh '''
+            if command -v aws >/dev/null 2>&1; then
+              echo "Verifying AWS caller identity before apply:"
+              aws sts get-caller-identity || true
+            else
+              echo "AWS CLI not installed; terraform will rely on environment / instance role"
+            fi
+
+            terraform apply -auto-approve
+          '''
         }
       }
     }
@@ -81,9 +119,9 @@ fi
 
 cd \$APP_DIR/app
 
-docker build -t python-jenkins-app .
-docker rm -f python-app || true
-docker run -d -p 5000:5000 --name python-app python-jenkins-app
+sudo docker build -t python-jenkins-app .
+sudo docker rm -f python-app || true
+sudo docker run -d -p 5000:5000 --name python-app python-jenkins-app
 
 echo "Application deployed successfully on EC2"
 '

@@ -7,14 +7,18 @@ exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&
 echo "===== USERDATA START ====="
 cat /etc/os-release
 
+# Detect package manager (supports dnf or yum)
+if command -v dnf >/dev/null 2>&1; then
+  PKG=dnf
+else
+  PKG=yum
+fi
+
 # Update system
-dnf update -y
+$PKG update -y
 
-# Install Git
-dnf install -y git
-
-# Install Docker (CORRECT for your AL2023)
-dnf install -y docker
+# Install Git and Docker
+$PKG install -y git docker
 
 # Enable & start Docker
 systemctl daemon-reexec
