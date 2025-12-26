@@ -35,20 +35,32 @@ pipeline {
 
     stage('Deploy to EC2') {
       steps {
-        script {
-          def ip = sh(
-            script: "cd terraform && terraform output -raw public_ip",
-            returnStdout: true
-          ).trim()
+        sshagent(credentials: ['ec2-ssh-key']) {
 
-          sh """
-            ssh -o StrictHostKeyChecking=no ec2-user@${ip} << 'EOF'
-              docker rm -f python-app || true
-              docker run -d -p 5000:5000 --name python-app python-jenkins-app
-            EOF
-          """
+          script {
+            def ip = sh(
+              script: "cd terraform && terraform output -raw public_ip",
+              returnStdout: true
+            ).trim()
+
+            sh """
+              ssh -o StrictHostKeyChecking=no ec2-user@${ip} << 'EOF'
+                docker rm -f python-app || true
+                docker run -d -p 5000:5000 --name python-app python-jenkins-app
+              EOF
+            """
+          }
         }
       }
+    }
+  }
+
+  post {
+    success {
+      echo 'Application deployed successfully to EC2'
+    }
+    failure {
+      echo 'Deployment failed'
     }
   }
 }
