@@ -58,12 +58,20 @@ pipeline {
             ).trim()
 
             sh """
-ssh -o StrictHostKeyChecking=no ec2-user@${ip} 'bash -lc "
+ssh -o StrictHostKeyChecking=no ec2-user@${ip} '
 set -e
 
-echo Connected to EC2
-docker --version
-git --version
+echo "Connected to EC2"
+
+echo "Waiting for Docker to be ready..."
+for i in {1..30}; do
+  if sudo /usr/bin/docker info >/dev/null 2>&1; then
+    echo "Docker is ready"
+    break
+  fi
+  echo "Docker not ready yet... retrying"
+  sleep 10
+done
 
 APP_DIR=/home/ec2-user/app
 
@@ -72,12 +80,12 @@ git clone ${env.GIT_URL} \$APP_DIR
 
 cd \$APP_DIR/app
 
-docker build -t demo-app .
-docker rm -f demo-app || true
-docker run -d -p 5000:5000 --name demo-app demo-app
+sudo /usr/bin/docker build -t demo-app .
+sudo /usr/bin/docker rm -f demo-app || true
+sudo /usr/bin/docker run -d -p 5000:5000 --name demo-app demo-app
 
-echo Deployment completed
-"'
+echo "Deployment completed successfully"
+'
 """
           }
         }
