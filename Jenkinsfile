@@ -5,7 +5,7 @@ pipeline {
     booleanParam(
       name: 'TAINT_RESOURCE',
       defaultValue: true,
-      description: 'Taint EC2 resource before apply'
+      description: 'Taint EC2 resource before terraform apply'
     )
     string(
       name: 'TAINT_TARGET',
@@ -40,9 +40,7 @@ pipeline {
       }
       steps {
         dir(TF_DIR) {
-          sh """
-            terraform taint ${params.TAINT_TARGET}
-          """
+          sh "terraform taint ${params.TAINT_TARGET}"
         }
       }
     }
@@ -55,7 +53,7 @@ pipeline {
       }
     }
 
-    stage('Deploy to EC2 (Build & Run on EC2)') {
+    stage('Deploy to EC2 (Docker runs ONLY on EC2)') {
       steps {
         sshagent(credentials: ['ec2-ssh-key']) {
           script {
@@ -68,12 +66,10 @@ pipeline {
               ssh -o StrictHostKeyChecking=no ec2-user@${ip} << 'EOF'
                 set -e
 
-                echo "Connected to EC2"
+                echo "Connected to target EC2"
 
-                if ! command -v docker >/dev/null 2>&1; then
-                  echo "Docker not found"
-                  exit 1
-                fi
+                # Docker check on EC2 (NOT Jenkins)
+                docker --version
 
                 APP_DIR=/home/ec2-user/demo-app
 
@@ -87,7 +83,7 @@ pipeline {
                 docker rm -f python-app || true
                 docker run -d -p 5000:5000 --name python-app python-jenkins-app
 
-                echo "Application deployed successfully"
+                echo "Application deployed successfully on EC2"
               EOF
             """
           }
