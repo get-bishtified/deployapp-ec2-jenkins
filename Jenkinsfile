@@ -4,7 +4,7 @@ pipeline {
   parameters {
     booleanParam(
       name: 'TAINT_RESOURCE',
-      defaultValue: true,
+      defaultValue: false,
       description: 'Taint EC2 resource before terraform apply'
     )
     string(
@@ -63,35 +63,35 @@ pipeline {
             ).trim()
 
             sh """
-              ssh -o StrictHostKeyChecking=no ec2-user@${ip} << 'EOF'
-                set -e
+ssh -o StrictHostKeyChecking=no ec2-user@${ip} <<EOF
+set -e
 
-                echo "Connected to target EC2"
+echo "Connected to target EC2"
 
-                DOCKER_BIN=\$(command -v docker)
-                if [ -z "\$DOCKER_BIN" ]; then
-                  echo "ERROR: Docker not found on target EC2"
-                  exit 1
-                fi
+DOCKER_BIN=\$(command -v docker)
+if [ -z "\$DOCKER_BIN" ]; then
+  echo "ERROR: Docker not found on target EC2"
+  exit 1
+fi
 
-                echo "Docker found at: \$DOCKER_BIN"
-                \$DOCKER_BIN --version
+echo "Docker found at: \$DOCKER_BIN"
+\$DOCKER_BIN --version
 
-                APP_DIR=/home/ec2-user/demo-app
+APP_DIR=/home/ec2-user/demo-app
 
-                if [ ! -d "\$APP_DIR" ]; then
-                  git clone https://github.com/get-bishtified/deployapp-ec2-jenkins.git \$APP_DIR
-                fi
+if [ ! -d "\$APP_DIR" ]; then
+  git clone https://github.com/get-bishtified/deployapp-ec2-jenkins.git \$APP_DIR
+fi
 
-                cd \$APP_DIR/app
+cd \$APP_DIR/app
 
-                \$DOCKER_BIN build -t python-jenkins-app .
-                \$DOCKER_BIN rm -f python-app || true
-                \$DOCKER_BIN run -d -p 5000:5000 --name python-app python-jenkins-app
+\$DOCKER_BIN build -t python-jenkins-app .
+\$DOCKER_BIN rm -f python-app || true
+\$DOCKER_BIN run -d -p 5000:5000 --name python-app python-jenkins-app
 
-                echo "Application deployed successfully on EC2"
-              EOF
-            """
+echo "Application deployed successfully on EC2"
+EOF
+"""
           }
         }
       }
