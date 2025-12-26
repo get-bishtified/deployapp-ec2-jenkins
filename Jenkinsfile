@@ -1,6 +1,19 @@
 pipeline {
   agent any
 
+  parameters {
+    booleanParam(
+      name: 'TAINT_RESOURCE',
+      defaultValue: false,
+      description: 'Taint EC2 resource before apply'
+    )
+    string(
+      name: 'TAINT_TARGET',
+      defaultValue: 'aws_instance.app_ec2',
+      description: 'Terraform resource to taint'
+    )
+  }
+
   environment {
     TF_DIR = 'terraform'
   }
@@ -13,13 +26,31 @@ pipeline {
       }
     }
 
-    stage('Terraform Init & Apply') {
+    stage('Terraform Init') {
       steps {
         dir(TF_DIR) {
-          sh '''
-            terraform init
-            terraform apply -auto-approve
-          '''
+          sh 'terraform init'
+        }
+      }
+    }
+
+    stage('Terraform Taint (Optional)') {
+      when {
+        expression { params.TAINT_RESOURCE }
+      }
+      steps {
+        dir(TF_DIR) {
+          sh """
+            terraform taint ${params.TAINT_TARGET}
+          """
+        }
+      }
+    }
+
+    stage('Terraform Apply') {
+      steps {
+        dir(TF_DIR) {
+          sh 'terraform apply -auto-approve'
         }
       }
     }
@@ -27,7 +58,6 @@ pipeline {
     stage('Deploy to EC2 (Build & Run on EC2)') {
       steps {
         sshagent(credentials: ['ec2-ssh-key']) {
-
           script {
             def ip = sh(
               script: "cd terraform && terraform output -raw public_ip",
