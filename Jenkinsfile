@@ -53,7 +53,7 @@ pipeline {
       }
     }
 
-    stage('Deploy to EC2 (Docker on EC2 only)') {
+    stage('Deploy to EC2 (Docker runs on EC2 only)') {
       steps {
         sshagent(credentials: ['ec2-ssh-key']) {
           script {
@@ -63,12 +63,15 @@ pipeline {
             ).trim()
 
             sh """
-ssh -o StrictHostKeyChecking=no ec2-user@${ip} "bash -l" <<EOF
+ssh -o StrictHostKeyChecking=no ec2-user@${ip} "bash -lc" <<EOF
 set -e
 
 echo "Connected to target EC2"
-which docker
+echo "PATH=\$PATH"
+
+# Verify tools (must work)
 docker --version
+git --version
 
 APP_DIR=/home/ec2-user/demo-app
 
@@ -88,6 +91,15 @@ EOF
           }
         }
       }
+    }
+  }
+
+  post {
+    success {
+      echo 'Deployment completed successfully'
+    }
+    failure {
+      echo 'Deployment failed'
     }
   }
 }
