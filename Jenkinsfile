@@ -48,7 +48,7 @@ pipeline {
                 APP_DIR=/home/ec2-user/demo-app
 
                 if [ ! -d "\$APP_DIR" ]; then
-                  git clone https://github.com/YOUR_ORG/YOUR_REPO.git \$APP_DIR
+                  git clone https://github.com/get-bishtified/deployapp-ec2-jenkins.git \$APP_DIR
                 fi
 
                 cd \$APP_DIR/app
