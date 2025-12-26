@@ -4,7 +4,7 @@ pipeline {
   parameters {
     booleanParam(
       name: 'TAINT_RESOURCE',
-      defaultValue: false,
+      defaultValue: true,
       description: 'Taint EC2 resource before apply'
     )
     string(
