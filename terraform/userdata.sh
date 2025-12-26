@@ -1,50 +1,33 @@
 #!/bin/bash
 set -euxo pipefail
 
-# Log everything for debugging
+# Log everything
 exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
 
 echo "===== USERDATA START ====="
 
-echo "=== OS INFO ==="
-cat /etc/os-release
-
-# -------------------------------
-# System update
-# -------------------------------
-echo "=== Updating system ==="
+# Update system
 dnf update -y
 
-# -------------------------------
 # Install Git
-# -------------------------------
-echo "=== Installing Git ==="
 dnf install -y git
 
-# -------------------------------
 # Install Docker
-# -------------------------------
-echo "=== Installing Docker ==="
 dnf install -y docker
 
+# Enable & start Docker
+systemctl daemon-reexec
 systemctl enable docker
 systemctl start docker
 
-# Allow ec2-user to run Docker
+# Add ec2-user to docker group
 usermod -aG docker ec2-user
 
-# -------------------------------
-# Verification
-# -------------------------------
-echo "=== VERIFY INSTALLATIONS ==="
-
-echo "Git version:"
+# Verify
+echo "Git:"
 git --version
 
-echo "Docker version:"
-docker --version
-
-echo "Docker service status:"
-systemctl status docker --no-pager
+echo "Docker:"
+docker --version || echo "Docker command not available yet"
 
 echo "===== USERDATA COMPLETE ====="
