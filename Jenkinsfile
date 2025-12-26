@@ -53,7 +53,7 @@ pipeline {
       }
     }
 
-    stage('Deploy to EC2 (Docker runs on EC2 only)') {
+    stage('Deploy to EC2 (Docker runs ONLY on EC2)') {
       steps {
         sshagent(credentials: ['ec2-ssh-key']) {
           script {
@@ -63,13 +63,13 @@ pipeline {
             ).trim()
 
             sh """
-ssh -o StrictHostKeyChecking=no ec2-user@${ip} "bash -lc" <<EOF
+ssh -o StrictHostKeyChecking=no ec2-user@${ip} bash -lc '
 set -e
 
 echo "Connected to target EC2"
 echo "PATH=\$PATH"
 
-# Verify tools (must work)
+# Verify tools (must succeed)
 docker --version
 git --version
 
@@ -86,7 +86,7 @@ docker rm -f python-app || true
 docker run -d -p 5000:5000 --name python-app python-jenkins-app
 
 echo "Application deployed successfully on EC2"
-EOF
+'
 """
           }
         }
