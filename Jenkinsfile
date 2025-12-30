@@ -29,16 +29,16 @@ pipeline {
       }
     }
 
-    stage('Terraform Taint (Optional)') {
-      when {
-        expression { params.TAINT_EC2 }
-      }
-      steps {
-        dir(TF_DIR) {
-          sh 'terraform taint aws_instance.app_ec2'
-        }
-      }
-    }
+    // stage('Terraform Taint (Optional)') {
+    //   when {
+    //     expression { params.TAINT_EC2 }
+    //   }
+    //   steps {
+    //     dir(TF_DIR) {
+    //       sh 'terraform taint aws_instance.app_ec2'
+    //     }
+    //   }
+    // }
 
     stage('Terraform Apply') {
       steps {
