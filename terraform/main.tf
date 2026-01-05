@@ -1,5 +1,9 @@
+provider "aws" {
+  region = var.aws_region
+}
+
 resource "aws_security_group" "app_sg" {
-  name = "python-app-sg"
+  name = "app-sg"
 
   ingress {
     from_port   = 22
@@ -24,13 +28,18 @@ resource "aws_security_group" "app_sg" {
 }
 
 resource "aws_instance" "app_ec2" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
+  ami                    = "ami-00ca570c1b6d79f36" # AL2023 (example)
+  instance_type          = "t2.micro"
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.app_sg.id]
-  user_data              = file("${path.module}/userdata.sh")
+
+  user_data = file("${path.module}/userdata.sh")
 
   tags = {
-    Name = "python-docker-app"
+    Name = "jenkins-docker-ec2"
   }
+}
+
+output "public_ip" {
+  value = aws_instance.app_ec2.public_ip
 }
