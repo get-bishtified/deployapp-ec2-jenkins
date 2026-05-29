@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello():
-    return "Hello from Jenkins + Terraform + Docker!"
+    return "Hello from Jenkins + Terraform + Docker! Thankyou for using this demo application."
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
